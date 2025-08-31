@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cloud Spend Estimator (Apollo.io-based)</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#111827; --muted:#94a3b8; --text:#e5e7eb;
+    --accent:#22d3ee; --accent2:#60a5fa; --bad:#f87171; --good:#34d399;
+    --chip:#1f2937; --input:#0b1220; --border:#1f2937;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0b1220,#0a0f1e 60%,#090e1b);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
+  header{padding:20px 16px 8px;max-width:980px;margin:0 auto}
+  h1{margin:0 0 6px;font-size:20px}
+  .sub{color:var(--muted);font-size:13px}
+  main{max-width:980px;margin:12px auto 40px;padding:0 16px;display:grid;grid-template-columns:1fr;gap:16px}
+  @media(min-width:960px){main{grid-template-columns:1.1fr .9fr}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px}
+  .grid{display:grid;grid-template-columns:1fr;gap:10px}
+  @media(min-width:640px){.grid-2{grid-template-columns:1fr 1fr}.grid-3{grid-template-columns:1fr 1fr 1fr}}
+  label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+  input,select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--input);color:var(--text);font-size:14px;outline:none}
+  input[type="number"]{appearance:textfield}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:var(--chip);border:1px solid var(--border);padding:8px 10px;border-radius:999px;font-size:13px;display:inline-flex;align-items:center;gap:8px}
+  .chip input{width:auto}
+  .muted{color:var(--muted)}
+  .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, monospace;background:#0b1526;border:1px solid #11203c;color:#bcd7ff;padding:2px 6px;border-radius:6px}
+  .out{font-size:28px;font-weight:700;letter-spacing:.2px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border);background:#0c1527;color:#cde9ff}
+  .hr{height:1px;background:linear-gradient(90deg,transparent,#1f2937,transparent);margin:10px 0}
+  .mini{font-size:12px;color:var(--muted)}
+  .btn{appearance:none;border:none;border-radius:10px;padding:10px 12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0b1220;font-weight:700;cursor:pointer}
+  .btn.secondary{background:#172033;color:#cde9ff;border:1px solid var(--border)}
+  .flex{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .table{width:100%;border-collapse:collapse;font-size:14px}
+  .table th,.table td{padding:8px;border-bottom:1px solid var(--border);text-align:left}
+  .right{text-align:right}
+  .warn{color:var(--bad)}
+  .ok{color:var(--good)}
+  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, monospace}
+  .stack{display:flex;flex-direction:column;gap:8px}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:#0c1527;border:1px solid var(--border);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Cloud Spend Estimator</h1>
+  <div class="sub">A “somewhat-simple” Adjust inputs and see estimated monthly cloud spend with breakdown.</div>
+</header>
+
+<main>
+  <section class="card">
+    <div class="flex">
+      <div><span class="badge">Inputs</span></div>
+      <button class="btn secondary" id="reset">Reset</button>
+    </div>
+    <div class="hr"></div>
+
+    <div class="grid grid-3">
+      <div>
+        <label>Employee count</label>
+        <input type="number" id="emp" min="1" step="1" value="320" />
+      </div>
+      <div>
+        <label>Annual revenue (USD, optional)</label>
+        <input type="number" id="rev" min="0" step="1000000" placeholder="e.g., 125000000" />
+      </div>
+      <div>
+        <label>Base per-employee ($/mo)</label>
+        <input type="number" id="basePE" min="10" step="5" value="90" />
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:10px">
+      <div>
+        <label>Industry</label>
+        <select id="industry">
+          <option value="1.8">SaaS / Software-first</option>
+          <option value="1.6">Fintech / AdTech / Gaming / Media</option>
+          <option value="1.4">E-commerce / Marketplaces</option>
+          <option value="1.3">Healthcare tech / EdTech</option>
+          <option value="1.0" selected>Unknown / Mixed</option>
+          <option value="0.9">Traditional IT (Mfg / Pro Serv / Logistics)</option>
+          <option value="0.7">Government / Nonprofit</option>
+        </select>
+      </div>
+      <div>
+        <label>Product delivery type</label>
+        <select id="productType">
+          <option value="1.3">Online software (SaaS, APIs, apps)</option>
+          <option value="1.1">Mixed software + services</option>
+          <option value="0.9">Internal IT-heavy</option>
+          <option value="1.0" selected>Unknown</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <div class="stack">
+      <label>Tech stack signals (toggle those found on Apollo)</label>
+      <div class="row" id="techSignals">
+        <label class="chip"><input type="checkbox" data-weight="0.3"> Public cloud + Containers/Kubernetes</label>
+        <label class="chip"><input type="checkbox" data-weight="0.2"> Data warehouse/lakehouse (Snowflake/BigQuery/Databricks/Redshift)</label>
+        <label class="chip"><input type="checkbox" data-weight="0.15"> Streaming (Kafka/Kinesis/PubSub)</label>
+        <label class="chip"><input type="checkbox" data-weight="0.1"> CDN/edge (Cloudflare/Fastly/Akamai)</label>
+        <label class="chip"><input type="checkbox" data-weight="0.1"> Observability (Datadog/New Relic/Prom+Grafana)</label>
+      </div>
+      <div class="mini">Tech intensity multiplier starts at 1.0 and adds selected weights, capped at 2.0.</div>
+    </div>
+
+    <div class="hr"></div>
+    <div class="stack">
+      <label>Hiring signals (open roles in DevOps/SRE/Platform/Data Eng/ML)</label>
+      <div class="row">
+        <label class="chip"><input type="radio" name="hire" value="0" checked> None</label>
+        <label class="chip"><input type="radio" name="hire" value="0.2"> 2–5 roles</label>
+        <label class="chip"><input type="radio" name="hire" value="0.4"> 6–15 roles</label>
+        <label class="chip"><input type="radio" name="hire" value="0.6"> >15 roles</label>
+      </div>
+      <div class="mini">Hiring multiplier is 1.0 + selected value (max +0.6).</div>
+    </div>
+
+    <div class="hr"></div>
+    <div class="grid grid-2">
+      <div>
+        <label>Scale by employees</label>
+        <select id="scaleEmp">
+          <option value="0.8">< 50</option>
+          <option value="1.0">50–200</option>
+          <option value="1.2" selected>201–1,000</option>
+          <option value="1.5">1,001–5,000</option>
+          <option value="1.8">>5,000</option>
+        </select>
+      </div>
+      <div>
+        <label>Scale by revenue (optional)</label>
+        <select id="scaleRev">
+          <option value="skip" selected>Use employee scale</option>
+          <option value="0.9">< $10M</option>
+          <option value="1.0">$10–50M</option>
+          <option value="1.2">$50–200M</option>
+          <option value="1.4">$200M–$1B</option>
+          <option value="1.7">> $1B</option>
+        </select>
+        <div class="mini">We take the larger of employee- or revenue-based scale.</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <div class="stack">
+      <label>Optional add-ons</label>
+      <div class="row">
+        <label class="chip"><input type="checkbox" id="gpuLight" data-addon="20000"> AI/ML inference (early-stage) +$20k/mo</label>
+        <label class="chip"><input type="checkbox" id="gpuHeavy" data-addon="150000"> AI training or large-scale inference +$150k/mo</label>
+        <label class="chip"><input type="checkbox" id="egress" data-addon="50000"> High media delivery/egress +$50k/mo</label>
+      </div>
+      <div class="mini">Adjust these based on Apollo hints (e.g., GPU roles, streaming/video, model training claims).</div>
+    </div>
+
+    <div class="hr"></div>
+    <div class="stack">
+      <label>Revenue sanity bounds (optional)</label>
+      <div class="row">
+        <label class="chip"><input type="checkbox" id="applyBounds" checked> Clamp estimate to 0.2%–3.5% of revenue per month</label>
+      </div>
+      <div class="mini">Requires revenue above. If below min or above max, we clamp. Bounds are rough heuristics.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="flex">
+      <div><span class="badge">Estimate</span></div>
+      <button class="btn" id="copyCSV">Copy CSV</button>
+    </div>
+    <div class="hr"></div>
+
+    <div class="grid grid-2">
+      <div>
+        <div class="muted">Estimated monthly cloud spend</div>
+        <div class="out" id="outMonthly">$0</div>
+        <div class="mini">Annualized: <span id="outAnnual" class="mono">$0</span></div>
+      </div>
+      <div>
+        <div class="muted">Key multipliers</div>
+        <div class="row">
+          <span class="pill">Industry: <span class="mono" id="mInd">1.0</span></span>
+          <span class="pill">Tech: <span class="mono" id="mTech">1.0</span></span>
+          <span class="pill">Hiring: <span class="mono" id="mHire">1.0</span></span>
+          <span class="pill">Scale: <span class="mono" id="mScale">1.0</span></span>
+          <span class="pill">Product: <span class="mono" id="mProd">1.0</span></span>
+        </div>
+        <div class="mini">Formula: Emp × Base_PE × M_ind × M_tech × M_hire × M_scale × M_prod + Add-ons</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <div>
+      <table class="table">
+        <thead>
+          <tr><th>Component</th><th class="right">Value</th></tr>
+        </thead>
+        <tbody id="breakdown"></tbody>
+      </table>
+      <div class="mini" id="boundsNote"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+function fmtUSD(n){
+  return n.toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0});
+}
+function clamp(val,min,max){return Math.max(min,Math.min(max,val));}
+
+function compute(){
+  const emp = +document.getElementById('emp').value || 0;
+  const rev = +document.getElementById('rev').value || 0;
+  const basePE = +document.getElementById('basePE').value || 90;
+
+  const M_ind = +document.getElementById('industry').value;
+  const M_prod = +document.getElementById('productType').value;
+
+  // Tech multiplier: start at 1.0, add weights, cap at 2.0
+  const techChecks = [...document.querySelectorAll('#techSignals input[type="checkbox"]')];
+  let techAdd = 0;
+  techChecks.forEach(ch => { if(ch.checked) techAdd += +ch.dataset.weight; });
+  let M_tech = 1.0 + techAdd;
+  M_tech = Math.min(M_tech, 2.0);
+
+  // Hiring multiplier: 1.0 + selected value (capped by inputs)
+  const hireSel = document.querySelector('input[name="hire"]:checked');
+  let M_hire = 1.0 + (+hireSel.value || 0);
+  if(M_hire > 1.6) M_hire = 1.6; // cap
+
+  // Scale: larger of employee-based or revenue-based if chosen
+  const M_scale_emp = +document.getElementById('scaleEmp').value;
+  const scaleRevEl = document.getElementById('scaleRev');
+  const M_scale_rev = scaleRevEl.value === 'skip' ? 0 : +scaleRevEl.value;
+  const M_scale = Math.max(M_scale_emp, M_scale_rev || 0);
+
+  // Base estimate
+  let base = emp * basePE;
+  let multProduct = M_ind * M_tech * M_hire * M_scale * M_prod;
+  let est = base * multProduct;
+
+  // Add-ons
+  const addons = [...document.querySelectorAll('[data-addon]')].reduce((sum,el)=>sum + (el.checked ? (+el.dataset.addon) : 0), 0);
+  est += addons;
+
+  // Revenue sanity bounds (optional)
+  const applyBounds = document.getElementById('applyBounds').checked;
+  let boundsNote = '';
+  if(applyBounds && rev > 0){
+    const minMonthly = rev * 0.002 / 12; // ~0.2% per month
+    const maxMonthly = rev * 0.035 / 12; // ~3.5% per month
+    const clamped = clamp(est, minMonthly, maxMonthly);
+    if(clamped !== est){
+      boundsNote = `Estimate clamped to revenue bounds: ${fmtUSD(minMonthly)} – ${fmtUSD(maxMonthly)} per month.`;
+      est = clamped;
+    } else {
+      boundsNote = `Within revenue bounds: ${fmtUSD(minMonthly)} – ${fmtUSD(maxMonthly)} per month.`;
+    }
+  } else if (applyBounds && rev <= 0){
+    boundsNote = 'Revenue bounds enabled but no revenue provided.';
+  } else {
+    boundsNote = 'Revenue bounds not applied.';
+  }
+
+  // Outputs
+  document.getElementById('outMonthly').textContent = fmtUSD(est);
+  document.getElementById('outAnnual').textContent = fmtUSD(est * 12);
+
+  document.getElementById('mInd').textContent = M_ind.toFixed(2);
+  document.getElementById('mTech').textContent = M_tech.toFixed(2);
+  document.getElementById('mHire').textContent = M_hire.toFixed(2);
+  document.getElementById('mScale').textContent = (M_scale || M_scale_emp).toFixed(2);
+  document.getElementById('mProd').textContent = M_prod.toFixed(2);
+
+  const breakdown = [
+    ['Employees', emp.toLocaleString()],
+    ['Base per-employee', fmtUSD(basePE)],
+    ['Base (Emp × Base_PE)', fmtUSD(base)],
+    ['Industry multiplier', M_ind.toFixed(2)],
+    ['Tech intensity multiplier', M_tech.toFixed(2)],
+    ['Hiring multiplier', M_hire.toFixed(2)],
+    ['Scale multiplier', (M_scale || M_scale_emp).toFixed(2)],
+    ['Product multiplier', M_prod.toFixed(2)],
+    ['Multipliers product', multProduct.toFixed(3)],
+    ['Add-ons total', fmtUSD(addons)],
+    ['Estimated monthly', fmtUSD(est)],
+    ['Estimated annual', fmtUSD(est*12)]
+  ];
+
+  const tbody = document.getElementById('breakdown');
+  tbody.innerHTML = breakdown.map(([k,v])=>`<tr><td>${k}</td><td class="right mono">${v}</td></tr>`).join('');
+
+  const bn = document.getElementById('boundsNote');
+  bn.textContent = boundsNote;
+  bn.className = 'mini ' + (boundsNote.includes('clamped') ? 'warn' : 'ok');
+}
+
+function syncScaleFromEmp(){
+  // Auto-pick employee scale bucket based on employee count
+  const emp = +document.getElementById('emp').value || 0;
+  const sel = document.getElementById('scaleEmp');
+  const buckets = [
+    {max:49, val:'0.8'},
+    {min:50, max:200, val:'1.0'},
+    {min:201, max:1000, val:'1.2'},
+    {min:1001, max:5000, val:'1.5'},
+    {min:5001, val:'1.8'}
+  ];
+  const b = buckets.find(b=>{
+    if(b.max !== undefined && emp <= b.max && (b.min===undefined || emp>=b.min)) return true;
+    if(b.max===undefined && emp >= (b.min||0)) return true;
+    return false;
+  });
+  if(b){
+    [...sel.options].forEach(o=>{ if(o.value===b.val) sel.value=b.val; });
+  }
+}
+
+function copyCSV(){
+  // CSV of key inputs and outputs (one row)
+  const get = id => document.getElementById(id);
+  const emp = +get('emp').value||0;
+  const rev = +get('rev').value||0;
+  const basePE = +get('basePE').value||0;
+  const ind = +get('industry').value;
+  const prod = +get('productType').value;
+
+  const tech = [...document.querySelectorAll('#techSignals input[type="checkbox"]')].map((c,i)=>c.checked?1:0);
+  const hire = document.querySelector('input[name="hire"]:checked').value;
+  const scaleEmp = +get('scaleEmp').value;
+  const scaleRev = get('scaleRev').value;
+
+  const outMonthly = document.getElementById('outMonthly').textContent.replace(/[$,]/g,'');
+  const outAnnual = document.getElementById('outAnnual').textContent.replace(/[$,]/g,'');
+
+  const headers = [
+    'emp','revenue','basePE','industryMult','productMult',
+    'tech_cloud+k8s','tech_dw','tech_stream','tech_cdn','tech_obs',
+    'hiringAdd','scaleEmp','scaleRevChoice','monthly','annual'
+  ];
+  const row = [
+    emp, rev, basePE, ind, prod,
+    ...tech,
+    hire, scaleEmp, scaleRev,
+    outMonthly, outAnnual
+  ];
+  const csv = headers.join(',') + '\n' + row.join(',');
+  navigator.clipboard.writeText(csv).then(()=>{
+    const btn = document.getElementById('copyCSV');
+    const old = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(()=>btn.textContent=old,1000);
+  });
+}
+
+function bind(){
+  document.querySelectorAll('input,select').forEach(el=>{
+    el.addEventListener('input', ()=>{ if(el.id==='emp') syncScaleFromEmp(); compute(); });
+    el.addEventListener('change', ()=>{ if(el.id==='emp') syncScaleFromEmp(); compute(); });
+  });
+  document.getElementById('copyCSV').addEventListener('click', copyCSV);
+  document.getElementById('reset').addEventListener('click', ()=>{
+    document.getElementById('emp').value = 320;
+    document.getElementById('rev').value = '';
+    document.getElementById('basePE').value = 90;
+    document.getElementById('industry').value = '1.0';
+    document.getElementById('productType').value = '1.0';
+    document.querySelectorAll('#techSignals input[type="checkbox"]').forEach(c=>c.checked=false);
+    document.querySelector('input[name="hire"][value="0"]').checked = true;
+    document.getElementById('scaleEmp').value = '1.2';
+    document.getElementById('scaleRev').value = 'skip';
+    document.getElementById('gpuLight').checked = false;
+    document.getElementById('gpuHeavy').checked = false;
+    document.getElementById('egress').checked = false;
+    document.getElementById('applyBounds').checked = true;
+    compute();
+  });
+  syncScaleFromEmp();
+  compute();
+}
+document.addEventListener('DOMContentLoaded', bind);
+</script>
+</body>
+</html>
