@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI‑Ready Contact Center ROI & Cost Savings Calculator</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#121a33;
+      --accent:#6ee7b7;
+      --accent-2:#60a5fa;
+      --text:#e5e7eb;
+      --muted:#9aa3b2;
+      --danger:#f87171;
+      --good:#86efac;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 80% -10%, #1a2450 0%, #0b1020 55%);
+      color: var(--text);
+      line-height:1.45;
+    }
+    header{
+      padding: 24px 16px 8px;
+      text-align:center;
+    }
+    h1{
+      margin:0 0 8px;
+      font-size: clamp(22px, 4.5vw, 32px);
+      letter-spacing:.3px;
+    }
+    .sub{
+      color: var(--muted);
+      max-width: 820px;
+      margin: 0 auto;
+      font-size: clamp(13px, 2.5vw, 15px);
+    }
+    .container{
+      max-width:1100px;
+      margin: 16px auto 60px;
+      padding: 0 12px;
+      display:grid;
+      grid-template-columns: 1fr 380px;
+      gap:16px;
+    }
+    @media (max-width: 980px){
+      .container{ grid-template-columns: 1fr; }
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius:14px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    .panel{
+      padding:18px 16px;
+    }
+    .panel + .panel{
+      border-top:1px solid rgba(255,255,255,0.06);
+    }
+    .section-title{
+      display:flex; align-items:center; gap:10px; margin:0 0 10px;
+      font-weight: 650; letter-spacing:.2px;
+    }
+    .section-title .dot{
+      width:10px;height:10px;border-radius:50%;background:var(--accent);
+      box-shadow:0 0 12px var(--accent);
+    }
+    .grid{
+      display:grid; gap:12px;
+      grid-template-columns: 1fr 1fr;
+    }
+    @media (max-width:640px){ .grid{ grid-template-columns:1fr; } }
+    label{
+      font-size:13px; color: var(--muted); display:block; margin: 0 0 6px;
+    }
+    .row{ display:flex; gap:10px; }
+    .row > * { flex:1; }
+    input[type="number"], input[type="range"], select{
+      width:100%; padding:10px 12px; border-radius:10px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(10,15,30,0.6);
+      color: var(--text); outline:none;
+    }
+    input[type="number"]:focus, select:focus{
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(110,231,183,0.15);
+    }
+    .range-wrap{ display:grid; gap:6px; }
+    .hint{ font-size:12px; color: var(--muted); }
+    .small{ font-size:12px; color: var(--muted); }
+    .inline{ display:flex; align-items:center; gap:8px; }
+    .switch{
+      position:relative; width:44px; height:24px; background:#2a345b; border-radius:999px; cursor:pointer;
+    }
+    .switch input{ display:none; }
+    .knob{
+      position:absolute; top:3px; left:3px; width:18px; height:18px; background:white; border-radius:50%;
+      transition: all .2s ease;
+    }
+    .switch input:checked + .knob{ left:23px; background: #d1fae5; }
+    .switch input:checked ~ .switch-bg{ background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+    .switch-bg{
+      position:absolute; inset:0; border-radius:999px; opacity:.35; transition: .2s;
+    }
+    .kpi{
+      display:grid; grid-template-columns: repeat(2, 1fr); gap:10px;
+    }
+    @media (max-width:480px){ .kpi{ grid-template-columns:1fr; } }
+    .kpi .item{
+      padding:12px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+    }
+    .kpi .label{ font-size:12px; color:var(--muted); }
+    .kpi .value{ font-size:20px; font-weight:700; margin-top:2px; }
+    .pos{ color: var(--good); }
+    .neg{ color: var(--danger); }
+    .btn{
+      display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);
+      background: linear-gradient(90deg, rgba(110,231,183,0.16), rgba(96,165,250,0.16));
+      color: var(--text); cursor:pointer; text-decoration:none; font-weight:600;
+    }
+    .btn.secondary{
+      background: transparent;
+    }
+    .right .panel:first-child{
+      padding: 16px;
+    }
+    .hero-cta{
+      display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;
+    }
+    .pill{
+      display:inline-block; font-size:12px; color:#d1fae5; background:rgba(110,231,183,0.12);
+      border:1px solid rgba(110,231,183,0.35); padding:4px 8px; border-radius:999px; margin-left:4px;
+    }
+    .footnote{
+      font-size:11px; color:var(--muted); margin-top:8px;
+    }
+    .bar{
+      height: 9px; background:#1b2446; border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,0.06);
+    }
+    .bar > span{
+      display:block; height:100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width:0%;
+      transition: width .4s ease;
+    }
+    .results{
+      display:grid; gap:12px;
+    }
+    .summary{
+      padding:12px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+      font-size:14px;
+    }
+    .callout{
+      margin-top:10px; padding:12px; border-left:3px solid var(--accent);
+      background: rgba(110,231,183,0.08); border-radius:8px;
+      color:#eafff5;
+    }
+    .table{
+      width:100%; border-collapse: collapse; font-size:13px; margin-top:6px;
+    }
+    .table th, .table td{
+      padding:8px; border-bottom:1px dashed rgba(255,255,255,0.08); text-align:right;
+    }
+    .table th:first-child, .table td:first-child{ text-align:left; color:var(--muted); }
+    .muted{ color:var(--muted); }
+    .share{
+      display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>AI‑Ready Contact Center ROI & Cost Savings Calculator</h1>
+  <p class="sub">
+    Quantify the savings from augmenting your call center with AI voice agents. Adjust the assumptions below to match your operation.
+    Defaults are conservative and can be tuned per campaign<span class="pill">14‑day pilot ready</span>.
+  </p>
+</header>
+
+<main class="container">
+  <!-- Left: Inputs -->
+  <section class="card">
+    <div class="panel">
+      <div class="section-title"><span class="dot"></span> Volume & Workforce</div>
+      <div class="grid">
+        <div>
+          <label for="monthlyContacts">Monthly inbound contacts (calls)</label>
+          <input type="number" id="monthlyContacts" min="0" step="100" value="25000" />
+          <div class="hint">All inbound calls handled by your center each month</div>
+        </div>
+        <div>
+          <label for="aht">Average handle time (AHT) in minutes</label>
+          <input type="number" id="aht" min="1" step="0.5" value="4.5" />
+          <div class="hint">Talk + hold + wrap</div>
+        </div>
+        <div>
+          <label for="agents">Number of agents (FTE)</label>
+          <input type="number" id="agents" min="0" step="1" value="120" />
+          <div class="hint">Current team size across shifts</div>
+        </div>
+        <div>
+          <label for="wage">Fully loaded cost per agent hour ($)</label>
+          <input type="number" id="wage" min="5" step="1" value="22" />
+          <div class="hint">Wages + benefits + overhead allocation</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title"><span class="dot"></span> AI Performance & Coverage</div>
+      <div class="grid">
+        <div class="range-wrap">
+          <label for="deflectionRate">AI deflection / pre‑qualification rate (%)</label>
+          <input type="range" id="deflectionRate" min="0" max="80" step="1" value="35" />
+          <div class="hint">Share of contacts resolved by AI or pre‑qualified before human</div>
+        </div>
+        <div class="range-wrap">
+          <label for="aiAHT">AI average handle time (minutes)</label>
+          <input type="range" id="aiAHT" min="1" max="8" step="0.1" value="2.8" />
+          <div class="hint">Typically shorter than human AHT</div>
+        </div>
+        <div>
+          <label for="hours">Operating hours coverage with AI</label>
+          <select id="hours">
+            - <option value="business" selected>Business hours augmentation (9–5)</option>
+            - <option value="after">After‑hours + weekends only</option>
+            - <option value="full">24/7 coverage</option>
+          </select>
+          <div class="hint">Used to estimate incremental value of extended coverage</div>
+        </div>
+        <div>
+          <label for="quality">First‑contact resolution improvement</label>
+          <select id="quality">
+            <option value="0">0% (no change)</option>
+            <option value="0.05">+5%</option>
+            <option value="0.1" selected>+10%</option>
+            <option value="0.15">+15%</option>
+          </select>
+          <div class="hint">Impacts repeat contacts and AHT</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title"><span class="dot"></span> Cost Assumptions</div>
+      <div class="grid">
+        <div>
+          <label for="aiPerMinute">AI cost per minute ($)</label>
+          <input type="number" id="aiPerMinute" min="0.01" step="0.01" value="0.18" />
+          <div class="hint">Telephony + inference + platform</div>
+        </div>
+        <div>
+          <label for="llmGuard">Safety buffer on AI minutes (%)</label>
+          <input type="number" id="llmGuard" min="0" step="1" value="10" />
+          <div class="hint">Extra minutes for retries, silence padding</div>
+        </div>
+        <div>
+          <label for="setupFee">One‑time setup ($)</label>
+          <input type="number" id="setupFee" min="0" step="500" value="4000" />
+          <div class="hint">Implementation and playbooks</div>
+        </div>
+        <div>
+          <label for="monthlyPlatform">Monthly platform fee ($)</label>
+          <input type="number" id="monthlyPlatform" min="0" step="100" value="1500" />
+          <div class="hint">Management, dashboards, optimization</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title"><span class="dot"></span> Growth & Revenue Impact (optional)</div>
+      <div class="grid">
+        <div>
+          <label for="missedRate">Current missed/abandoned call rate (%)</label>
+          <input type="number" id="missedRate" min="0" max="100" step="1" value="12" />
+          <div class="hint">Share of inbound not answered by humans</div>
+        </div>
+        <div>
+          <label for="revPerOpp">Revenue per qualified opportunity ($)</label>
+          <input type="number" id="revPerOpp" min="0" step="50" value="120" />
+          <div class="hint">Avg downstream value per booked call/transfer</div>
+        </div>
+        <div>
+          <label for="aiRecapture">AI recapture of missed calls (%)</label>
+          <input type="number" id="aiRecapture" min="0" max="100" step="1" value="60" />
+          <div class="hint">Portion of missed that AI answers (esp. after-hours)</div>
+        </div>
+        <div>
+          <label for="bookingRate">Booking/transfer rate on AI‑qualified calls (%)</label>
+          <input type="number" id="bookingRate" min="0" max="100" step="1" value="22" />
+          <div class="hint">Warm transfers + scheduled appointments</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title"><span class="dot"></span> Controls</div>
+      <div class="row" style="align-items:center;">
+        <label class="inline" style="gap:12px;">
+          AI replaces headcount savings?
+          <span class="small">(if off, savings shown as capacity/unlocked value)</span>
+        </label>
+        <label class="switch" title="Toggle to apply direct labor reduction">
+          <input type="checkbox" id="headcountToggle" />
+          <span class="switch-bg"></span>
+          <span class="knob"></span>
+        </label>
+        <a class="btn secondary" id="reset">Reset defaults</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right: Results -->
+  <aside class="right">
+    <section class="card">
+      <div class="panel">
+        <div class="section-title"><span class="dot"></span> Executive Summary</div>
+
+        <div class="kpi" style="margin-bottom:8px;">
+          <div class="item">
+            <div class="label">Net monthly savings</div>
+            <div class="value pos" id="netSavings">$0</div>
+            <div class="bar"><span id="barNet"></span></div>
+          </div>
+          <div class="item">
+            <div class="label">Annualized savings</div>
+            <div class="value pos" id="annualSavings">$0</div>
+            <div class="bar"><span id="barAnnual"></span></div>
+          </div>
+          <div class="item">
+            <div class="label">Months to payback</div>
+            <div class="value" id="payback">0.0</div>
+            <div class="bar"><span id="barPayback"></span></div>
+          </div>
+          <div class="item">
+            <div class="label">ROI (12 months)</div>
+            <div class="value" id="roi">0%</div>
+            <div class="bar"><span id="barROI"></span></div>
+          </div>
+        </div>
+
+        <div class="summary" id="summaryText">
+          Loading...
+        </div>
+        <div class="callout" id="coverageCallout">
+          With 24/7 AI coverage, you can recapture missed/after‑hours demand and lift revenue. See “Revenue impact” below.
+        </div>
+        <div class="share">
+          <button class="btn" id="copyLink">Share scenario</button>
+          <button class="btn secondary" id="downloadCSV">Download CSV</button>
+        </div>
+        <div class="footnote">Assumptions are editable; results update instantly. All values are estimates.</div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title"><span class="dot"></span> Cost Breakdown</div>
+        <table class="table" id="costTable">
+          <thead>
+          <tr>
+            <th>Item</th><th>Monthly</th><th>Annual</th>
+          </tr>
+          </thead>
+          <tbody>
+            <!-- filled by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <div class="section-title"><span class="dot"></span> Volume & Efficiency Impact</div>
+        <table class="table" id="impactTable">
+          <thead>
+          <tr><th>Metric</th><th>Before</th><th>After (AI‑Aug)</th></tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <div class="section-title"><span class="dot"></span> Revenue Impact (optional)</div>
+        <table class="table" id="revTable">
+          <thead>
+          <tr><th>Component</th><th>Monthly</th><th>Annual</th></tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+        <div class="small muted">Revenue impact is shown for completeness and not included in “Net cost savings” unless you explicitly treat it as financial benefit.</div>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<script>
+  // Utility
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n, p = 0) => {
+    if (isNaN(n)) return '-';
+    const opts = { style: 'currency', currency: 'USD', maximumFractionDigits: p, minimumFractionDigits: p };
+    return new Intl.NumberFormat('en-US', opts).format(n);
+  };
+  const pct = (n, p=0) => `${(n*100).toFixed(p)}%`;
+
+  const inputs = {
+    monthlyContacts: $('monthlyContacts'),
+    aht: $('aht'),
+    agents: $('agents'),
+    wage: $('wage'),
+    deflectionRate: $('deflectionRate'),
+    aiAHT: $('aiAHT'),
+    hours: $('hours'),
+    quality: $('quality'),
+    aiPerMinute: $('aiPerMinute'),
+    llmGuard: $('llmGuard'),
+    setupFee: $('setupFee'),
+    monthlyPlatform: $('monthlyPlatform'),
+    missedRate: $('missedRate'),
+    revPerOpp: $('revPerOpp'),
+    aiRecapture: $('aiRecapture'),
+    bookingRate: $('bookingRate'),
+    headcountToggle: $('headcountToggle')
+  };
+
+  const outputs = {
+    netSavings: $('netSavings'),
+    annualSavings: $('annualSavings'),
+    payback: $('payback'),
+    roi: $('roi'),
+    barNet: $('barNet'),
+    barAnnual: $('barAnnual'),
+    barPayback: $('barPayback'),
+    barROI: $('barROI'),
+    summaryText: $('summaryText'),
+    coverageCallout: $('coverageCallout'),
+    costTable: $('costTable').querySelector('tbody'),
+    impactTable: $('impactTable').querySelector('tbody'),
+    revTable: $('revTable').querySelector('tbody')
+  };
+
+  // Persist & share via URL params
+  function readParams(){
+    const u = new URL(location.href);
+    Object.keys(inputs).forEach(k=>{
+      const el = inputs[k];
+      const v = u.searchParams.get(k);
+      if (v !== null){
+        if (el.type === 'checkbox') el.checked = v === '1';
+        else el.value = v;
+      }
+    });
+  }
+
+  function writeParams(){
+    const u = new URL(location.href);
+    Object.keys(inputs).forEach(k=>{
+      const el = inputs[k];
+      const v = (el.type === 'checkbox') ? (el.checked ? '1' : '0') : el.value;
+      u.searchParams.set(k, v);
+    });
+    history.replaceState({}, '', u);
+  }
+
+  function compute(){
+    // Read
+    const monthlyContacts = +inputs.monthlyContacts.value || 0;
+    const ahtMin = +inputs.aht.value || 0; // human
+    const agents = +inputs.agents.value || 0;
+    const wage = +inputs.wage.value || 0; // $/hour fully loaded
+
+    const deflectPct = (+inputs.deflectionRate.value || 0) / 100;
+    const aiAHT = +inputs.aiAHT.value || 0;
+    const hours = inputs.hours.value;
+    const fcrLift = +inputs.quality.value || 0;
+
+    const aiPerMinute = +inputs.aiPerMinute.value || 0; // $/min
+    const guard = (+inputs.llmGuard.value || 0) / 100;
+    const setupFee = +inputs.setupFee.value || 0;
+    const platformFee = +inputs.monthlyPlatform.value || 0;
+
+    const missedRate = Math.min(Math.max((+inputs.missedRate.value || 0)/100,0),1);
+    const revPerOpp = +inputs.revPerOpp.value || 0;
+    const aiRecapture = Math.min(Math.max((+inputs.aiRecapture.value || 0)/100,0),1);
+    const bookingRate = Math.min(Math.max((+inputs.bookingRate.value || 0)/100,0),1);
+
+    const headcountSavings = inputs.headcountToggle.checked;
+
+    // Baselines
+    const humanMinutesMonthly = monthlyContacts * ahtMin;
+    const humanCostPerMinute = wage / 60; // $/min
+    const baselineHumanCost = humanMinutesMonthly * humanCostPerMinute;
+
+    // AI handling
+    const aiContacts = monthlyContacts * deflectPct;
+    const humanContactsAfter = monthlyContacts * (1 - deflectPct);
+
+    // First-contact resolution lift reduces repeat traffic; approximate by reducing remaining load
+    const fcrReductionFactor = 1 - fcrLift * 0.5; // conservative: only half of FCR lift reduces repeats now
+    const adjustedHumanContactsAfter = humanContactsAfter * fcrReductionFactor;
+
+    // Minutes
+    const aiMinutes = aiContacts * aiAHT * (1 + guard);
+    const humanMinutesAfter = adjustedHumanContactsAfter * (ahtMin * (1 - fcrLift*0.2)); // slightly faster due to better triage
+
+    // Costs
+    const aiCost = aiMinutes * aiPerMinute;
+    const humanCostAfter = humanMinutesAfter * humanCostPerMinute;
+
+    // Platform
+    const monthlyFixed = platformFee;
+    const monthlyCostsAfter = aiCost + humanCostAfter + monthlyFixed;
+
+    // Savings logic:
+    // If headcount savings ON: compare baseline human-only cost vs. new mixed cost.
+    // If OFF: show "efficiency value" as capacity created (minutes saved * human cost/min).
+    const minutesSaved = Math.max(humanMinutesMonthly - humanMinutesAfter, 0);
+    const laborCostAvoided = minutesSaved * humanCostPerMinute;
+    const directSavings = headcountSavings ? Math.max(baselineHumanCost - (aiCost + humanCostAfter), 0) : 0;
+
+    // Net savings (monthly)
+    const monthlyNetSavings = headcountSavings
+      ? (baselineHumanCost - monthlyCostsAfter)
+      : (laborCostAvoided - (aiCost + monthlyFixed)); // treat human cost unchanged, but value captured as capacity
+
+    // Annualization & payback
+    const annualNetSavings = monthlyNetSavings * 12 - setupFee; // count setup in year one
+    const monthlyBenefitGross = headcountSavings ? Math.max(baselineHumanCost - (aiCost + humanCostAfter), 0) : laborCostAvoided;
+    const monthlyInvestment = aiCost + monthlyFixed;
+    const paybackMonths = (setupFee > 0 && (monthlyNetSavings > 0)) ? (setupFee / monthlyNetSavings) : (monthlyNetSavings > 0 ? 0.5 : Infinity);
+    const roi12 = (annualNetSavings) / Math.max((monthlyInvestment*12 + setupFee), 1);
+
+    // Coverage-based revenue lift (optional, not included in savings)
+    let coverageMultiplier = 1.0;
+    if (hours === 'after') coverageMultiplier = 1.15;
+    if (hours === 'full') coverageMultiplier = 1.30;
+
+    const missedCalls = monthlyContacts * missedRate;
+    const recapturedByAI = missedCalls * aiRecapture * (hours !== 'business' ? 1 : 0.4); // less recapture if only business-hours aug
+    const qualifiedFromAI = (aiContacts + recapturedByAI) * bookingRate;
+    const monthlyRevLift = qualifiedFromAI * revPerOpp * (hours === 'business' ? 0.9 : 1.0) * (1 + fcrLift*0.5) * (coverageMultiplier >= 1.3 ? 1.05 : 1.0);
+    const annualRevLift = monthlyRevLift * 12;
+
+    // Fill summary
+    outputs.netSavings.textContent = fmt(monthlyNetSavings, 0);
+    outputs.annualSavings.textContent = fmt(annualNetSavings, 0);
+    outputs.payback.textContent = isFinite(paybackMonths) ? paybackMonths.toFixed(1) : '—';
+    outputs.roi.textContent = isFinite(roi12) ? pct(roi12, 0) : '—';
+
+    // Bars
+    const cap = (v, min, max) => Math.max(min, Math.min(max, v));
+    outputs.barNet.style.width = `${cap((monthlyNetSavings/(baselineHumanCost||1))*100, 0, 100)}%`;
+    outputs.barAnnual.style.width = `${cap(((annualNetSavings/((baselineHumanCost*12)||1))*100), 0, 100)}%`;
+    outputs.barPayback.style.width = `${cap((isFinite(paybackMonths)? (100 - (Math.min(paybackMonths, 24)/24)*100) : 0), 0, 100)}%`;
+    outputs.barROI.style.width = `${cap((roi12*100)/200, 0, 100)}%`;
+
+    // Narrative
+    const narrative = [];
+    narrative.push(`You handle about ${monthlyContacts.toLocaleString()} inbound contacts monthly at ${ahtMin.toFixed(1)} min AHT (${humanMinutesMonthly.toLocaleString()} total minutes).`);
+    narrative.push(`With AI resolving or pre‑qualifying ${(deflectPct*100).toFixed(0)}% at ${aiAHT.toFixed(1)} min AHT, you shift ${aiContacts.toLocaleString()} contacts to AI and reduce remaining human minutes to ${Math.round(humanMinutesAfter).toLocaleString()}.`);
+    if (headcountSavings){
+      narrative.push(`Compared to a baseline human‑only cost of ${fmt(baselineHumanCost)}, your new blended run‑rate is ${fmt(monthlyCostsAfter)} (AI ${fmt(aiCost)} + human ${fmt(humanCostAfter)} + platform ${fmt(monthlyFixed)}).`);
+      narrative.push(`Estimated net monthly savings: ${fmt(monthlyNetSavings)}. Year‑1 net after setup: ${fmt(annualNetSavings)}.`);
+    } else {
+      narrative.push(`This frees up roughly ${Math.round(minutesSaved).toLocaleString()} human minutes/month (${(minutesSaved/60).toFixed(1)} hours), worth ${fmt(laborCostAvoided)} in capacity, for an AI run‑rate of ${fmt(aiCost + monthlyFixed)}.`);
+      narrative.push(`Net capacity‑adjusted savings: ${fmt(monthlyNetSavings)} per month (not counting revenue lift).`);
+    }
+    outputs.summaryText.textContent = narrative.join(' ');
+
+    // Cost table
+    outputs.costTable.innerHTML = '';
+    const rowsCost = [
+      ['Baseline human cost (no AI)', baselineHumanCost, baselineHumanCost*12],
+      ['AI minutes cost', aiCost, aiCost*12],
+      ['Platform fee', platformFee, platformFee*12],
+      ['Human cost after AI', humanCostAfter, humanCostAfter*12],
+      ['One‑time setup (year 1)', 0, setupFee]
+    ];
+    rowsCost.forEach(([k, m, a])=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${k}</td><td>${fmt(m)}</td><td>${fmt(a)}</td>`;
+      outputs.costTable.appendChild(tr);
+    });
+
+    // Impact table
+    outputs.impactTable.innerHTML = '';
+    const beforeAfter = [
+      ['Monthly contacts handled by humans', monthlyContacts.toLocaleString(), Math.round(adjustedHumanContactsAfter).toLocaleString()],
+      ['Average handle time (human, minutes)', ahtMin.toFixed(1), (ahtMin*(1 - fcrLift*0.2)).toFixed(1)],
+      ['Monthly human minutes', Math.round(humanMinutesMonthly).toLocaleString(), Math.round(humanMinutesAfter).toLocaleString()],
+      ['AI contacts', '—', Math.round(aiContacts).toLocaleString()],
+      ['AI minutes', '—', Math.round(aiMinutes).toLocaleString()]
+    ];
+    beforeAfter.forEach(([k,b,a])=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${k}</td><td>${b}</td><td>${a}</td>`;
+      outputs.impactTable.appendChild(tr);
+    });
+
+    // Revenue table
+    outputs.revTable.innerHTML = '';
+    const revRows = [
+      ['Missed calls (current)', missedCalls, missedCalls*12],
+      ['Recaptured by AI (monthly)', recapturedByAI, recapturedByAI*12],
+      ['Qualified outcomes from AI (contacts → warm transfer/booking)', qualifiedFromAI, qualifiedFromAI*12],
+      ['Estimated revenue lift', monthlyRevLift, annualRevLift]
+    ];
+    revRows.forEach(([k, m, a])=>{
+      const tr = document.createElement('tr');
+      const fmtMaybe = (val) => (typeof val === 'number' && k.includes('revenue')) ? fmt(val) : (typeof val === 'number' ? Math.round(val).toLocaleString() : val);
+      tr.innerHTML = `<td>${k}</td><td>${fmtMaybe(m)}</td><td>${fmtMaybe(a)}</td>`;
+      outputs.revTable.appendChild(tr);
+    });
+
+    // Coverage hint visibility
+    outputs.coverageCallout.style.display = hours === 'business' ? 'none' : 'block';
+
+    writeParams();
+  }
+
+  // Bind events
+  Object.values(inputs).forEach(el=>{
+    el.addEventListener('input', compute);
+    el.addEventListener('change', compute);
+  });
+
+  $('reset').addEventListener('click', ()=>{
+    // Reset to sensible defaults
+    const defaults = {
+      monthlyContacts: 25000,
+      aht: 4.5,
+      agents: 120,
+      wage: 22,
+      deflectionRate: 35,
+      aiAHT: 2.8,
+      hours: 'full',
+      quality: 0.1,
+      aiPerMinute: 0.18,
+      llmGuard: 10,
+      setupFee: 4000,
+      monthlyPlatform: 1500,
+      missedRate: 12,
+      revPerOpp: 120,
+      aiRecapture: 60,
+      bookingRate: 22,
+      headcountToggle: false
+    };
+    Object.entries(defaults).forEach(([k,v])=>{
+      const el = inputs[k];
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = Boolean(v);
+      else el.value = v;
+    });
+    compute();
+  });
+
+  $('copyLink').addEventListener('click', async ()=>{
+    try{
+      await navigator.clipboard.writeText(location.href);
+      const btn = $('copyLink');
+      const old = btn.textContent;
+      btn.textContent = 'Link copied!';
+      setTimeout(()=>btn.textContent = old, 1400);
+    }catch(e){}
+  });
+
+  $('downloadCSV').addEventListener('click', ()=>{
+    // Export a simple CSV snapshot
+    const getVal = (el)=> el.type==='checkbox' ? (el.checked?'1':'0') : el.value;
+    const data = Object.keys(inputs).map(k=>[k, getVal(inputs[k])]);
+    let csv = 'Variable,Value\n' + data.map(r=>r.join(',')).join('\n');
+    // Add key results
+    const net = $('netSavings').textContent;
+    const ann = $('annualSavings').textContent;
+    const pay = $('payback').textContent;
+    const roi = $('roi').textContent;
+    csv += '\n\nResult,Value\nNet monthly savings,'+net+'\nAnnualized savings,'+ann+'\nMonths to payback,'+pay+'\nROI (12 months),'+roi;
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'ai_contact_center_roi.csv'; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Init
+  readParams();
+  compute();
+</script>
+</body>
+</html>
